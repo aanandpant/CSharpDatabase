@@ -1,0 +1,294 @@
+
+-- as Master create database per video instructions
+-- open new query window and cut and paste each go-section
+-- execute with each new paste
+
+use orders_db
+go
+
+create table Customers
+(Customer_ID	int,
+ First_Name   varchar(50),
+ Last_Name	varchar(50),
+ Email		varchar(50),
+ Telephone	varchar(50),
+ constraint   PK_Customers Primary Key (Customer_ID));
+go
+
+create table Products
+(Product_ID	int,
+ Product_Desc	varchar(200) not null,
+ Product_Name	varchar(50) not null,
+ Unit_Price	real not null,
+ Quantity_On_Hand	int default 0,
+ Product_Length	int default 0,
+ Product_Width	int default 0,
+ constraint	PK_Products Primary Key (Product_ID));
+go
+
+create table Countries
+ (Country	varchar(50),
+  constraint	PK_Countries Primary Key (Country));
+go
+
+create table States_Provinces
+ (Country		varchar(50),
+  State_Province varchar(50),
+  constraint PK_States_Provinces Primary Key 
+	(Country, State_Province),
+  constraint FK1_States_Provinces Foreign Key 			(Country) references Countries(Country));
+go
+
+create table Address_Types
+(Address_Type	varchar(20),
+ constraint PK_Addres_Type Primary Key (Address_Type));
+go
+	
+create table Customer_Addresses
+(Customer_ID	int,
+ Address_ID		int,
+ Address_Type	varchar(20),
+ Street_Address1	varchar(80),
+ Street_Address2	varchar(80),
+ City			varchar(80),
+ Postal_code	varchar(80),
+ Country		varchar(50),
+ State_Province	varchar(50),
+ constraint PK_Customer_Addresses Primary Key 
+	(Customer_id, Address_ID),
+ constraint FK1_Customer_Addresses Foreign Key 
+	(Customer_id) references Customers(Customer_ID),
+ constraint FK2_Customer_Addresses Foreign Key (Address_Type) 	references Address_Types(Address_Type),
+ constraint FK3_Customer_Addresses Foreign Key 
+	(Country, State_Province) references 	States_Provinces(Country, State_Province))
+ go
+
+create table Orders
+ (Order_ID	int,
+  Order_Date date not null,
+  Customer_ID int,
+  constraint PK_Orders Primary Key (Order_ID),
+  constraint FK1_Orders Foreign Key (Customer_ID) references 	Customers(Customer_ID));
+ go
+
+ create table Order_LineItems
+ (Order_ID	int,
+  LineItem	int,
+  Product_ID		int,
+  Order_Quantity	int default 0,
+  Extended_Price	real,
+  constraint PK_Order_LineItems Primary Key (Order_ID, LineItem),
+  constraint FK1_Order_LineItems Foreign Key (Product_ID) 	references Products(Product_ID),
+  constraint FK2_Order_LineItems Foreign Key (Order_ID) 	references Orders(Order_ID));
+go
+
+create table Shipping_Boxes
+(Shipping_Box_ID	int,
+ Box_Length			int default 0,
+ Box_Width			int default 0,
+ constraint PK_Shipping_Boxes Primary Key (Shipping_Box_ID));
+go
+
+create table Employees
+(Employee_ID		int,
+ Manager_ID			int,
+ First_Name			varchar(50),
+ Last_Name			varchar(50),
+ Hire_Date			date,
+ constraint PK_Employees Primary Key (Employee_ID),
+ constraint FK1_Employees Foreign Key (Manager_ID) references 	Employees(Employee_ID));
+go
+
+create table Shipment_Types
+(Shipment_Type	varchar(20),
+ constraint PK_Shipment_Types Primary Key (Shipment_Type));
+go
+
+create table Shipments
+(Shipment_ID	int,
+ Order_ID		int,
+ Customer_ID	int,
+ Address_ID		int,
+ Shipment_Type	varchar(20),
+ constraint PK_Shipments Primary Key (Shipment_ID),
+ constraint FK1_Shipments Foreign Key (Order_ID) references 	Orders(Order_ID),
+ constraint FK2_Shipments Foreign Key (Customer_ID) references 	Customers(Customer_ID),
+ constraint FK3_Shipments Foreign Key (Customer_Id, Address_ID) 
+	references Customer_Addresses(Customer_ID, Address_ID),
+ constraint FK4_Shipments Foreign Key (Shipment_Type) references 	Shipment_Types(Shipment_Type));
+go
+
+create table Shipment_LineItems
+(Shipment_ID	int,
+ Order_ID		int,
+ LineItem		int,
+ Shipped_By		int,
+ Shipping_Box_ID	int,
+ Ship_date		date not null,
+ constraint FK1_Shipment_LineItems Foreign Key (Shipment_ID) 	references Shipments(Shipment_ID),
+ constraint FK2_Shipment_LineItems Foreign Key 
+	(Order_ID, LineItem) references 
+	Order_LineItems(Order_id, LineItem),
+ constraint FK3_Shipment_LineItems Foreign Key (Shipped_By) 	references Employees(Employee_ID),
+ constraint FK4_Shipment_LineItems Foreign Key (Shipping_Box_ID) 	references Shipping_Boxes(Shipping_Box_ID));
+go
+
+--  oops missed a column in the shipments table better fix
+alter table shipments
+add inspected_by int not null;
+go
+
+alter table shipments
+add constraint FK5_Shipments Foreign Key (inspected_by) references employees(employee_id);
+go
+
+-- after you have verified that all your DDL has executed 
+-- properly, we can start writing some DML 
+-- always start with a clean db just incase this is a rerun
+
+begin transaction;
+delete from Shipment_LineItems;
+delete from shipments;
+delete from shipment_types;
+delete from shipping_boxes;
+delete from employees;
+delete from customer_addresses;
+delete from address_types;
+delete from states_provinces;
+delete from countries;
+delete from order_lineitems;
+delete from products;
+delete from orders;
+delete from customers;
+commit;
+go
+
+-- start by loading the base tables
+begin transaction;
+insert into address_types
+	(address_type)
+values
+	('Home');
+
+insert into address_types
+	(address_type)
+values
+	('Work');
+
+insert into address_types
+	(address_type)
+values
+	('Other');
+commit;
+go
+
+begin transaction;
+
+insert into Shipment_Types
+	(shipment_type)
+values ('Partial');
+
+insert into Shipment_Types
+	(Shipment_Type)
+values ('Complete');
+
+commit;
+go
+
+begin transaction;
+insert into countries
+	(country)
+values
+	('United States');
+
+insert into countries
+	(country)
+values
+	('Canada');
+
+insert into countries
+	(country)
+values
+	('India');
+
+insert into countries
+	(country)
+values
+	('Mexico');
+commit;
+go
+
+/* I consider this bad practice despite it being valid SQL syntax */
+/* What would happen if I accidentally inverted the column order? */
+
+begin transaction;
+insert into states_provinces
+values ('United States','North Carolina');
+
+insert into states_provinces
+values ('United States','Wisconsin');
+
+insert into states_provinces
+values ('United States','Hawaii');
+
+insert into states_provinces
+values ('United States','South Carolina');
+
+insert into states_provinces
+values ('Canada','British Columbia');
+
+insert into states_provinces
+values ('Canada','Ontario');
+commit;
+go
+
+/* check out the inclusion of a quote in a string */
+begin transaction;
+insert into products
+	(product_id, product_desc, product_name, unit_price, quantity_on_hand, product_length, product_width)
+values
+	(1, 'Strawberry Jam','Grandpa''s Strawberry Jam', 3.99, 10, 10, 5);
+insert into products
+	(product_id, product_desc, product_name, unit_price, quantity_on_hand, product_length, product_width)
+values
+	(2, 'Strawberry Jelly','Grandpa''s Strawberry Jelly', 4.99, 10, 10, 5);
+insert into products
+	(product_id, product_desc, product_name, unit_price, quantity_on_hand, product_length, product_width)
+values
+	(3, 'Blueberry Jam','Grandpa''s Blueberry Jam', 3.99, 10, 10, 5);
+insert into products
+	(product_id, product_desc, product_name, unit_price, quantity_on_hand, product_length, product_width)
+values
+	(4, 'Blueberry Jelly','Grandpa''s Blueberry Jelly', 4.99, 10, 10, 5);
+insert into products
+	(product_id, product_desc, product_name, unit_price, quantity_on_hand, product_length, product_width)
+values
+	(5, 'Sine','Grandma''s Shine', 23.99, 20, 10, 10);
+commit;
+go
+
+/* better fix the typo */
+begin transaction;
+update 	products
+set     	product_desc = 'Shine'
+where   	product_desc = 'Sine';
+commit;
+go
+
+/* end by populating the customers tables */
+begin transaction;
+
+insert into customers
+	(customer_id, first_name, last_name, email, telephone )
+values
+	(1, 'Rick', 'Phillips', 'hi_you1123@gmail.com', '123 456-7788');
+
+insert into customers
+	(customer_id, first_name, last_name, email, telephone )
+values
+	(2, 'Mary', 'Phillips', 'hi_you321@gmail.com', '981 765-4321');
+
+commit;
+go
+
+/* we will populate all the remaining tables via our examples */

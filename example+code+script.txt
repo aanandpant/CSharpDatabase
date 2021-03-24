@@ -1,0 +1,84 @@
+/************************************************************/
+/*											*/
+/*	Section 2 Lecture 4 SQL 						*/
+							*/
+/*											*/
+/************************************************************/
+
+/* connect to the correct db */
+use orders_db;
+go
+
+
+/* insert statement with explicitly defined column list - note default date format YYYY-MM-DD */
+
+insert into employees
+	(employee_id, first_name, last_name, hire_date)
+values
+	(1,'Rick','Phillips', '2019-09-25');
+go
+
+/* see what we created using explicit list of column names */
+select employee_id, first_name, last_name, hire_date
+from employees;
+go
+
+/* if we use * instead of field list we get all columns in order they were originally defined */
+/* note:  manager_id = null, this is very different from zero length string */
+select * 
+from employees;
+go
+
+/* this will fail because employee_id is the PK of this table and is thus required */
+insert into employees
+	(first_name, last_name, hire_date)
+values
+	('Rick','Phillips', '2019-09-25');
+go
+
+/* insert another row w/ Referential Integrity (RI) into employees table */
+insert into employees
+	(employee_id, first_name, last_name, hire_date, manager_id)
+values
+	(2, 'Mary','Phillips','2019-09-25 23:59:59', 1);
+go
+
+select * from employees;
+go
+
+/* what happens if we break RI on insert of a row */
+insert into employees
+	(employee_id, first_name, last_name, hire_date, manager_id)
+values
+	(3, 'Mary','Phillips','2019-09-25 23:59:59', -1);
+go
+
+/* let's move on to an update statement */
+update employees
+set	  first_name = 'Joe',
+       last_name = 'Smoe'
+where  employee_id = 1;
+go
+
+select * from employees;
+go
+
+/* what will happen if we remove the where clause */
+update employees
+set	  first_name = 'Joe',
+       last_name = 'Smoe';
+go
+
+/* insert off of a select */
+insert into employees
+	(employee_id, first_name, last_name, hire_date)
+select
+	3, first_name, last_name, hire_date
+from	employees
+where employee_id = 1;
+go
+
+/* let's clean this employees table mess up before we quit this lecture */
+delete from employees
+where  employee_id > 0;
+go
